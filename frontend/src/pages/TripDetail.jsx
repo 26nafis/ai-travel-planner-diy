@@ -147,7 +147,7 @@ export default function TripDetail() {
       <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,440px)]">
         <div className="order-2 lg:order-1">
           {visibleDays.map(({ d, i }) => (
-            <DayTimeline key={i} day={d} dayIndex={i} totalDays={trip.days.length} placesById={placesById}
+            <DayTimeline key={i} day={d} dayIndex={i} totalDays={trip.days.length} placesById={placesById} start={trip.start}
               color={dayColor(i)} activeId={activeId} busy={busy === i} actions={actions} />
           ))}
         </div>

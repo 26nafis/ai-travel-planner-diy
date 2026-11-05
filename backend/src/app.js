@@ -5,12 +5,13 @@ import profileRoutes from './routes/profile.routes.js';
 import destinationRoutes from './routes/destinations.routes.js';
 import tripRoutes from './routes/trips.routes.js';
 import chatRoutes from './routes/chat.routes.js';
+import { configuredModel, isHuggingFaceConfigured } from './services/llm.service.js';
 
 const app = express();
 app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') || true, credentials: true }));
 app.use(express.json({ limit: '200kb' }));
 
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
+app.get('/api/health', (_req, res) => res.json({ ok: true, llmConfigured: isHuggingFaceConfigured(), model: configuredModel() }));
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/destinations', destinationRoutes);

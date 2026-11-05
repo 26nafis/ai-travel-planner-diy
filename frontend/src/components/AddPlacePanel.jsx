@@ -44,7 +44,7 @@ export default function AddPlacePanel({ open, dayNumber, destinations, usedIds, 
               <div className="min-w-0 flex-1">
                 <p className="font-bold">{d.name}</p>
                 <p className="text-sm text-abu">{d.regency}</p>
-                <p className="mt-1 text-sm">{d.desc[lang]}</p>
+                <p className="mt-1 text-sm">{d.desc?.[lang] || d.desc?.id}</p>
               </div>
               <button className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-white hover:bg-primary-600"
                 onClick={() => onAdd(d.id)} aria-label={`${t.trip.addPlace}: ${d.name}`}><Plus size={18} /></button>

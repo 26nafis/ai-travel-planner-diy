@@ -13,6 +13,19 @@ export function mapsLink(place) {
   return `https://www.google.com/maps/search/?api=1&query=${q}`;
 }
 
+export function mapsDirectionsLink(start, places) {
+  if (!places?.length) return 'https://www.google.com/maps';
+  const point = (p) => `${p.lat},${p.lng}`;
+  const stops = start ? places : places.slice(1);
+  const params = new URLSearchParams({
+    api: '1', origin: start ? point(start) : point(places[0]),
+    destination: point(stops.at(-1) || places[0]), travelmode: 'driving',
+  });
+  const waypoints = stops.slice(0, -1).map(point).join('|');
+  if (waypoints) params.set('waypoints', waypoints);
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
 export function isInsideDIY({ lat, lng }, b) {
   return lat <= b.north && lat >= b.south && lng >= b.west && lng <= b.east;
 }

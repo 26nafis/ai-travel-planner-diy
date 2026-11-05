@@ -1,74 +1,44 @@
-# Lampah Jogja: AI Travel Planner DIY
+# Lampah Jogja
 
-Frontend (UI/UX) sudah lengkap dan bisa dijalankan tanpa backend (mode demo).
-Backend berisi kerangka Express yang tinggal diisi (`TODO`).
+Prototipe web planner perjalanan untuk wisatawan yang baru pertama kali datang ke DIY. Pengguna memilih durasi, titik awal, dan kategori minat; aplikasi menyusun itinerary, lalu pengguna dapat mengubah, menyusun ulang, menyimpan, membuka, atau menghapus perjalanan.
 
-## Struktur
+## Menjalankan
 
-```
-ai-travel-planner-diy/
-├── frontend/                 React + Vite + Tailwind CSS
-│   └── src/
-│       ├── pages/            Landing, AuthPage (masuk/daftar), Plan, TripDetail, MyTrips, NotFound
-│       ├── components/       Header, TripMap, DayTimeline, AddPlacePanel, pemilih durasi/lokasi/preferensi, dll.
-│       ├── i18n/             id.js & en.js (semua teks UI), LanguageContext
-│       ├── context/          AuthContext
-│       ├── services/         api.js (pintu tunggal), mockApi.js (demo), recommender.js
-│       ├── data/             destinations.js (DATA CONTOH, ganti dengan dataset tim)
-│       └── lib/              geo.js (jarak garis lurus, tautan Google Maps, warna hari)
-└── backend/                  Node.js + Express (siap deploy ke Vercel)
-    ├── api/index.js          entry Vercel
-    ├── src/routes/           auth, profile, destinations, trips
-    ├── src/controllers/      handler berisi TODO, mengembalikan 501 sampai diisi
-    ├── src/services/         recommender.service.js, llm.service.js (Hugging Face/Llama)
-    ├── src/middleware/auth.js
-    └── db/schema.sql         tabel + Row Level Security untuk Supabase
-```
-
-## Menjalankan frontend
-
-```bash
+```powershell
 cd frontend
-cp .env.example .env      # biarkan VITE_API_URL kosong untuk mode demo
 npm install
-npm run dev               # http://localhost:5173
+npm run dev
 ```
 
-Mode demo menyimpan akun dan perjalanan di localStorage browser, jadi alur lengkap
-(daftar → susun itinerary → edit → simpan → buka lagi → hapus) bisa didemokan tanpa server.
-Peta memakai peta skematis bawaan sampai `VITE_GOOGLE_MAPS_API_KEY` diisi.
+Buka alamat lokal yang ditampilkan Vite. Dalam mode tanpa backend, aplikasi memakai aturan lokal dan menyimpan perjalanan di `localStorage` browser yang sama. Frontend berjalan pada `http://127.0.0.1:5173`.
 
-## Menyambungkan ke backend
+## Dataset
 
-1. Isi `backend/.env`, jalankan `db/schema.sql` di Supabase, lalu `npm install && npm run dev` di `backend/`.
-2. Isi `VITE_API_URL=http://localhost:3000` di `frontend/.env`.
-3. Lengkapi controller sampai respons sama bentuknya dengan `frontend/src/services/mockApi.js`.
+CSV sumber berada di `dataset/dataset-wisata-jogja-sekitar.csv`. Untuk membuat ulang data yang dipakai frontend:
 
-## Kontrak API
+```powershell
+py scripts/prepare_dataset.py
+```
 
-| Method | Endpoint | Body | Respons |
-|---|---|---|---|
-| POST | /api/auth/register | `{ name, email, password, language }` | `{ token, user }` |
-| POST | /api/auth/login | `{ email, password }` | `{ token, user }` |
-| GET | /api/auth/me | | `user` |
-| PATCH | /api/profile | `{ name?, language? }` | `user` |
-| GET | /api/destinations | | `Destination[]` |
-| POST | /api/chat | `{ messages, language }` | `{ reply, meta? }` |
-| POST | /api/trips/generate | `{ durationDays, start, preferences, language }` | `Trip` (saved: false) |
-| GET | /api/trips | | `Trip[]` yang sudah disimpan |
-| GET | /api/trips/:id | | `Trip` |
-| PUT | /api/trips/:id | `{ title?, days? }` | `Trip` |
-| POST | /api/trips/:id/save | `{ title?, days? }` | `Trip` (saved: true) |
-| POST | /api/trips/:id/regenerate | `{ dayIndex? }` | `Trip` |
-| DELETE | /api/trips/:id | | 204 |
+Skrip menormalkan tipe destinasi menjadi kategori aplikasi, menghitung skor dari rating dan jumlah ulasan, serta menandai popularitas berdasarkan jumlah ulasan. Data sumber tidak menyediakan kabupaten, jam buka, aksesibilitas, atau atribut ramah keluarga; karena itu aplikasi tidak mengklaim menyaring destinasi berdasarkan atribut tersebut. Deskripsi sumber berbahasa Indonesia.
 
-Error selalu berbentuk `{ code, message }`. Bentuk `Trip` dan `Destination` dijelaskan
-di komentar `backend/src/controllers/`.
+## Yang tersedia saat ini
 
-Bila `source` pada Trip bernilai `rules` (LLM gagal dan backend memakai aturan), frontend
-menampilkan pemberitahuan kepada pengguna, sesuai kriteria keberhasilan nomor 7.
+- Web responsif dengan pilihan bahasa Indonesia dan Inggris.
+- Durasi 1–7 hari dan pilihan 8 hari atau lebih (hingga 21 hari).
+- Titik awal dari geolokasi, daftar lokasi umum, atau pin pada peta skematis.
+- Rekomendasi kategori dan penyusunan itinerary berdasarkan dataset, rating/ulasan, serta kedekatan garis lurus.
+- Edit urutan, pindah/hapus destinasi, tambah tempat, susun ulang semua/hari tertentu, dan simpan lokal.
+- Tautan per hari untuk membuka rute berkendara di Google Maps; rute dan waktu tempuh dihitung oleh Google Maps setelah dibuka.
+- Endpoint chat backend mengirim kandidat destinasi dataset ke Hugging Face dan menerima pilihan ID destinasi yang divalidasi server.
+- Bila token/model tidak tersedia atau jawabannya tidak valid, chatbot membuat draf dari aturan dataset dan menandainya sebagai fallback.
 
-## Mengganti nama aplikasi
+## Belum terhubung
 
-"Lampah Jogja" hanya nama kerja. Ganti `appName` di `frontend/src/i18n/id.js` dan `en.js`,
-serta `<title>` di `frontend/index.html`.
+- Chat backend memerlukan token Hugging Face dengan izin Inference Providers. Buat `backend/.env` dari `.env.example`, lalu isi `HF_TOKEN`.
+- Untuk uji chatbot melalui backend lokal, jalankan `npm install` dan `npm run dev` di folder `backend`; jalankan frontend dengan `VITE_API_URL=http://localhost:3000`.
+- Database Supabase, penyimpanan perjalanan lintas perangkat, dan endpoint trip backend belum diaktifkan. Dataset koneksi tes sekarang dibaca dari JSON lokal; sumber produksi dapat dialihkan ke Supabase.
+- Google Maps JavaScript API bersifat opsional. Tanpa kunci API, tampilan peta tetap skematis; daftar titik awal adalah saran bawaan, bukan pencarian alamat/geocoding.
+- Dataset membutuhkan validasi cakupan wilayah, kelengkapan koordinat, kualitas deskripsi, dan kemutakhiran ulasan sebelum dipakai sebagai informasi perjalanan publik.
+
+Endpoint chat adalah bagian backend yang sudah tersedia untuk uji lokal. Endpoint auth, destinasi API, dan trip masih berupa kerangka.

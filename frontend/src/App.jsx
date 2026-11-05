@@ -2,9 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import ChatAssistant from './components/ChatAssistant.jsx';
-import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Landing from './pages/Landing.jsx';
-import AuthPage from './pages/AuthPage.jsx';
 import Plan from './pages/Plan.jsx';
 import TripDetail from './pages/TripDetail.jsx';
 import MyTrips from './pages/MyTrips.jsx';
@@ -18,11 +16,9 @@ export default function App() {
       <main id="main" className="flex-1">
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/masuk" element={<AuthPage mode="login" />} />
-          <Route path="/daftar" element={<AuthPage mode="register" />} />
-          <Route path="/rencanakan" element={<ProtectedRoute><Plan /></ProtectedRoute>} />
-          <Route path="/perjalanan" element={<ProtectedRoute><MyTrips /></ProtectedRoute>} />
-          <Route path="/perjalanan/:id" element={<ProtectedRoute><TripDetail /></ProtectedRoute>} />
+          <Route path="/rencanakan" element={<Plan />} />
+          <Route path="/perjalanan" element={<MyTrips />} />
+          <Route path="/perjalanan/:id" element={<TripDetail />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

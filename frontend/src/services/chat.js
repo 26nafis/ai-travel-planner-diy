@@ -50,16 +50,14 @@ export function demoChatReply({ messages = [], language = 'id' }) {
 
   const days = detectDays(text);
   const categories = detectCategories(text);
-  const family = /\b(keluarga|anak|family|kids|child|children)\b/.test(text);
-  const accessible = /\b(kursi roda|wheelchair|difabel|disabilitas|mobilitas|accessible)\b/.test(text);
   const hiddenOnly = /\b(jarang|hidden|off the beaten|sepi|anti mainstream|lesser)\b/.test(text);
 
-  const hasSignal = days != null || categories.length > 0 || family || accessible || hiddenOnly;
+  const hasSignal = days != null || categories.length > 0 || hiddenOnly;
   if (!hasSignal) {
     return {
       reply: lang === 'id'
-        ? 'Halo! Saya asisten Lampah Jogja. Ceritakan rencanamu, misalnya "3 hari di Jogja, suka alam dan kuliner" atau "wisata ramah anak". Nanti aku bantu susun kerangkanya.'
-        : 'Hi! I’m the Lampah Jogja assistant. Tell me your plan, e.g. "3 days in Jogja, into nature and food" or "family-friendly places". I’ll help sketch the itinerary.',
+        ? 'Halo! Saya asisten Lampah Jogja. Ceritakan rencanamu, misalnya "3 hari di Jogja, suka alam dan kuliner". Nanti aku bantu susun kerangkanya.'
+        : 'Hi! I’m the Lampah Jogja assistant. Tell me your plan, e.g. "3 days in Jogja, into nature and food". I’ll help sketch the itinerary.',
       meta: null,
     };
   }
@@ -67,22 +65,18 @@ export function demoChatReply({ messages = [], language = 'id' }) {
   let pool = categories.length
     ? DESTINATIONS.filter((d) => d.categories.some((c) => categories.includes(c)))
     : [...DESTINATIONS];
-  if (family) pool = pool.filter((d) => d.family);
-  if (accessible) pool = pool.filter((d) => d.accessible);
   if (hiddenOnly) pool = pool.filter((d) => d.popularity === 'hidden');
 
   // Jangan biarkan filter terlalu sempit: kalau kosong, kembali ke semua destinasi.
   if (pool.length === 0) pool = [...DESTINATIONS];
 
-  // Mengikuti aturan aplikasi: kunjungan pendek utamakan yang ikonik,
-  // kunjungan panjang utamakan yang kurang dikenal.
-  const preferHidden = days != null && days >= 3;
+  // Kunjungan pendek memberi bobot pada tempat populer; durasi lebih panjang
+  // mengurutkan berdasarkan skor dari rating dan jumlah ulasan dataset.
+  const shortStay = days != null && days < 3;
   pool.sort((a, b) => {
-    if (a.popularity !== b.popularity) {
-      if (preferHidden) return a.popularity === 'hidden' ? -1 : 1;
-      return a.popularity === 'popular' ? -1 : 1;
-    }
-    return a.name.localeCompare(b.name);
+    const scoreA = (a.recommendationScore || 0) + (shortStay && a.popularity === 'popular' ? 0.3 : 0);
+    const scoreB = (b.recommendationScore || 0) + (shortStay && b.popularity === 'popular' ? 0.3 : 0);
+    return scoreB - scoreA || a.name.localeCompare(b.name);
   });
 
   const picks = pool.slice(0, 3);
@@ -99,13 +93,13 @@ export function demoChatReply({ messages = [], language = 'id' }) {
   const intro = lang === 'id'
     ? `Ini kerangka${days ? ` ${days} hari` : ''}${catNames.length ? ` dengan minat ${joinList(catNames, lang)}` : ''}:`
     : `Here’s a${days ? ` ${days}-day` : ''} sketch${catNames.length ? ` focused on ${joinList(catNames, lang)}` : ''}:`;
-  const bullets = picks.map((p) => `• ${p.name} (${p.regency}) — ${p.desc[lang]}`).join('\n');
+  const bullets = picks.map((p) => `• ${p.name} (${p.regency}) — ${p.desc?.[lang] || p.desc?.id || ''}`).join('\n');
   const outro = lang === 'id'
     ? 'Klik "Susun itinerary ini" untuk membuka form yang sudah terisi, lalu tentukan titik awalmu.'
     : 'Tap "Plan this itinerary" to open a pre-filled form, then set your starting point.';
 
   return {
     reply: `${intro}\n${bullets}\n\n${outro}`,
-    meta: { durationDays: days, categories, family, accessible },
+    meta: { durationDays: days, categories },
   };
 }

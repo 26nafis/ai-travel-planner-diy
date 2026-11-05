@@ -13,21 +13,19 @@ function scorePlace(place, { durationDays, preferences, start }, rand) {
   const reasons = [];
 
   const wantPopular = durationDays <= 2;
-  if (wantPopular && place.popularity === 'popular') { score += 5; reasons.push('popular'); }
-  if (!wantPopular && place.popularity === 'hidden') { score += 5; reasons.push('hidden'); }
+  score += (place.recommendationScore || 0) * 10;
+  if (wantPopular && place.popularity === 'popular') { score += 3; reasons.push('popular'); }
+  if (durationDays >= 3) reasons.push('recommended');
 
   const matched = place.categories.filter((c) => cats.includes(c));
   score += matched.length * 2;
   matched.forEach((c) => reasons.push(`cat:${c}`));
 
-  if (preferences.family && place.family) { score += 1; reasons.push('family'); }
-  if (preferences.accessible && place.accessible) { score += 1; reasons.push('accessible'); }
-
   const km = start ? haversineKm(start, place) : 0;
   score -= km / 12; // makin jauh dari titik awal, makin kecil skornya
   if (km < 8) reasons.push('near');
 
-  score += rand() * 0.8; // variasi kecil untuk regenerate
+  score += rand() * 0.05;
   return { ...place, score, km, reasons };
 }
 
@@ -40,8 +38,6 @@ export function rankCandidates(destinations, input, seed = Date.now()) {
   const rand = seeded(seed);
   const { preferences } = input;
   let pool = destinations;
-  if (preferences.accessible) pool = pool.filter((d) => d.accessible);
-  if (preferences.family) pool = pool.filter((d) => d.family);
   const cats = preferences.categories || [];
   if (cats.length) {
     const filtered = pool.filter((d) => d.categories.some((c) => cats.includes(c)));

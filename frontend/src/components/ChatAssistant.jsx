@@ -19,6 +19,8 @@ function Bubble({ message, onPlan }) {
             : `rounded-bl-md bg-white shadow-card ${message.error ? 'text-red-700' : 'text-tinta'}`
         }`}>
         <p className="whitespace-pre-line">{message.content}</p>
+        {message.source && !message.error && <p className="mt-2 border-t border-garis pt-1.5 text-[10px] font-semibold text-abu">{message.source === 'llm' ? t.chat.sourceLlm : t.chat.sourceRules}</p>}
+        {message.notice && <p className="mt-1 text-[10px] text-accent-700">{t.chat.notices[message.notice] || t.chat.notices.default}</p>}
         {message.meta && (
           <button
             type="button"
@@ -73,7 +75,7 @@ export default function ChatAssistant() {
         messages: outgoing.map(({ role, content: c }) => ({ role, content: c })),
         language: lang,
       });
-      setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', content: res.reply, meta: res.meta }]);
+      setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', content: res.reply, meta: res.meta, source: res.source, notice: res.notice }]);
     } catch (err) {
       setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', content: err.message || t.errors.generic, error: true }]);
     } finally {

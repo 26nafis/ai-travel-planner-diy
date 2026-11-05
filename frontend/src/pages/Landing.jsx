@@ -1,16 +1,14 @@
 import { Link } from 'react-router-dom';
 import { CalendarDays, MapPin, SlidersHorizontal, Sparkles, Compass } from 'lucide-react';
 import { useLang } from '../i18n/LanguageContext.jsx';
-import { useAuth } from '../context/AuthContext.jsx';
 import { StopMarker } from '../components/Kawung.jsx';
 import { DESTINATIONS } from '../data/destinations.js';
 
-const SAMPLE = ['keraton', 'tamansari', 'gudeg-yudjum', 'malioboro'];
+const SAMPLE = ['346', '8', '315', '24'];
 const STEP_ICONS = [SlidersHorizontal, CalendarDays, MapPin];
 
 export default function Landing() {
   const { t, lang } = useLang();
-  const { user } = useAuth();
   const sample = SAMPLE.map((id) => DESTINATIONS.find((d) => d.id === id));
 
   return (
@@ -23,7 +21,7 @@ export default function Landing() {
             <p className="mt-5 max-w-prose text-lg leading-relaxed text-primary-50">{t.landing.lead}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link to="/rencanakan" className="btn-cta px-7 py-3.5 text-base">{t.landing.cta}</Link>
-              {user && <Link to="/perjalanan" className="btn border border-white/60 px-6 py-3.5 text-base text-white hover:bg-white/10">{t.landing.ctaSecondary}</Link>}
+              <Link to="/perjalanan" className="btn border border-white/60 px-6 py-3.5 text-base text-white hover:bg-white/10">{t.landing.ctaSecondary}</Link>
             </div>
           </div>
 
@@ -40,7 +38,7 @@ export default function Landing() {
                   </div>
                   <div className="pb-5">
                     <p className="font-bold">{p.name}</p>
-                    <p className="text-sm leading-relaxed text-abu">{p.desc[lang]}</p>
+                    <p className="text-sm leading-relaxed text-abu">{p.desc?.[lang] || p.desc?.id}</p>
                   </div>
                 </li>
               ))}

@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useLang } from '../i18n/LanguageContext.jsx';
-import { useAuth } from '../context/AuthContext.jsx';
 import { IS_DEMO } from '../services/api.js';
 import { KawungMark } from './Kawung.jsx';
 
@@ -23,12 +22,8 @@ function LangSwitch() {
 
 export default function Header() {
   const { t } = useLang();
-  const { user, logout } = useAuth();
-  const nav = useNavigate();
   const [open, setOpen] = useState(false);
   const linkCls = ({ isActive }) => `rounded-full px-3 py-2 text-sm font-semibold ${isActive ? 'text-primary' : 'text-abu hover:text-tinta'}`;
-
-  const doLogout = async () => { await logout(); setOpen(false); nav('/'); };
 
   return (
     <header className="sticky top-0 z-30 border-b border-garis bg-white/95 backdrop-blur" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
@@ -41,22 +36,11 @@ export default function Header() {
 
         <nav className="hidden items-center gap-1 md:flex">
           <NavLink to="/rencanakan" className={linkCls}>{t.nav.plan}</NavLink>
-          {user && <NavLink to="/perjalanan" className={linkCls}>{t.nav.trips}</NavLink>}
+          <NavLink to="/perjalanan" className={linkCls}>{t.nav.trips}</NavLink>
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
           <LangSwitch />
-          {user ? (
-            <>
-              <span className="max-w-[10rem] truncate text-sm text-abu" title={user.email}>{user.name}</span>
-              <button className="btn-ghost py-2" onClick={doLogout}>{t.nav.logout}</button>
-            </>
-          ) : (
-            <>
-              <Link to="/masuk" className="btn-ghost py-2">{t.nav.login}</Link>
-              <Link to="/daftar" className="btn-primary py-2">{t.nav.register}</Link>
-            </>
-          )}
         </div>
 
         <button className="rounded-full p-2 md:hidden" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={t.nav.menu}>
@@ -68,18 +52,10 @@ export default function Header() {
         <div className="border-t border-garis bg-surface px-4 pb-5 pt-3 md:hidden">
           <div className="flex flex-col gap-1" onClick={() => setOpen(false)}>
             <NavLink to="/rencanakan" className={linkCls}>{t.nav.plan}</NavLink>
-            {user && <NavLink to="/perjalanan" className={linkCls}>{t.nav.trips}</NavLink>}
+            <NavLink to="/perjalanan" className={linkCls}>{t.nav.trips}</NavLink>
           </div>
           <div className="mt-4 flex items-center justify-between gap-3">
             <LangSwitch />
-            {user ? (
-              <button className="btn-ghost py-2" onClick={doLogout}>{t.nav.logout}</button>
-            ) : (
-              <div className="flex gap-2" onClick={() => setOpen(false)}>
-                <Link to="/masuk" className="btn-ghost py-2">{t.nav.login}</Link>
-                <Link to="/daftar" className="btn-primary py-2">{t.nav.register}</Link>
-              </div>
-            )}
           </div>
         </div>
       )}

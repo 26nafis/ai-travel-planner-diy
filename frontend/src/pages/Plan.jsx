@@ -51,8 +51,6 @@ export default function Plan() {
   const [start, setStart] = useState(null);
   const [prefs, setPrefs] = useState({
     categories: Array.isArray(prefill?.categories) ? prefill.categories : [],
-    family: !!prefill?.family,
-    accessible: !!prefill?.accessible,
   });
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -64,8 +62,6 @@ export default function Plan() {
     setDuration({ value: days, flexible: days >= 8 });
     setPrefs({
       categories: Array.isArray(prefill.categories) ? prefill.categories : [],
-      family: !!prefill.family,
-      accessible: !!prefill.accessible,
     });
   }, [prefill]);
 

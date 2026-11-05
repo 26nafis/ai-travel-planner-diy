@@ -1,14 +1,11 @@
 /**
- * API tiruan untuk mode demo. Menyimpan akun & perjalanan di localStorage browser.
- * JANGAN dipakai di produksi: kata sandi disimpan apa adanya di browser.
+ * Penyimpanan lokal tanpa akun; perjalanan tersimpan pada browser ini.
  * Bentuk respons sengaja disamakan dengan kontrak backend di README.
  */
 import { DESTINATIONS } from '../data/destinations.js';
 import { rankCandidates, buildDays } from './recommender.js';
 import { demoChatReply } from './chat.js';
 
-const KEY_USERS = 'lampah:users';
-const KEY_SESSION = 'lampah:session';
 const KEY_TRIPS = 'lampah:trips';
 const wait = (ms = 450) => new Promise((r) => setTimeout(r, ms));
 
@@ -21,15 +18,7 @@ function write(key, value) {
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
 function fail(code, message) { const e = new Error(message); e.code = code; throw e; }
-function currentUser() {
-  const s = read(KEY_SESSION, null);
-  if (!s) fail('UNAUTHORIZED', 'Sesi berakhir. Silakan masuk lagi.');
-  return s.user;
-}
-function ownTrips() {
-  const user = currentUser();
-  return read(KEY_TRIPS, []).filter((t) => t.userId === user.id);
-}
+function ownTrips() { return read(KEY_TRIPS, []); }
 function saveTripRecord(trip) {
   const all = read(KEY_TRIPS, []);
   const i = all.findIndex((t) => t.id === trip.id);
@@ -39,52 +28,25 @@ function saveTripRecord(trip) {
 }
 
 export const mockApi = {
-  async register({ name, email, password }) {
-    await wait();
-    const users = read(KEY_USERS, []);
-    if (users.some((u) => u.email === email.toLowerCase())) fail('EMAIL_TAKEN', 'Email sudah terdaftar.');
-    const user = { id: uid(), name, email: email.toLowerCase(), language: 'id' };
-    users.push({ ...user, password });
-    write(KEY_USERS, users);
-    write(KEY_SESSION, { token: 'demo-' + user.id, user });
-    return { token: 'demo-' + user.id, user };
-  },
-  async login({ email, password }) {
-    await wait();
-    const found = read(KEY_USERS, []).find((u) => u.email === email.toLowerCase() && u.password === password);
-    if (!found) fail('INVALID_CREDENTIALS', 'Email atau kata sandi salah.');
-    const { password: _pw, ...user } = found;
-    write(KEY_SESSION, { token: 'demo-' + user.id, user });
-    return { token: 'demo-' + user.id, user };
-  },
-  async me() {
-    const s = read(KEY_SESSION, null);
-    return s ? s.user : null;
-  },
-  async logout() { localStorage.removeItem(KEY_SESSION); },
-  async updateProfile(patch) {
-    const s = read(KEY_SESSION, null);
-    if (!s) return null;
-    const user = { ...s.user, ...patch };
-    write(KEY_SESSION, { ...s, user });
-    write(KEY_USERS, read(KEY_USERS, []).map((u) => (u.id === user.id ? { ...u, ...patch } : u)));
-    return user;
-  },
+  async register() { fail('NOT_AVAILABLE', 'Akun tidak diperlukan untuk menggunakan aplikasi.'); },
+  async login() { fail('NOT_AVAILABLE', 'Akun tidak diperlukan untuk menggunakan aplikasi.'); },
+  async me() { return null; },
+  async logout() {},
+  async updateProfile() { return null; },
 
   async listDestinations() { await wait(150); return DESTINATIONS; },
 
   async chat({ messages, language }) {
     await wait(700);
-    return demoChatReply({ messages, language });
+    return { ...demoChatReply({ messages, language }), source: 'rules' };
   },
 
   async generateTrip(input) {
-    currentUser();
     await wait(1100);
     const ranked = rankCandidates(DESTINATIONS, input);
     const days = buildDays(ranked, input.durationDays, input.start);
     const trip = {
-      id: uid(), userId: currentUser().id, saved: false, source: 'rules',
+      id: uid(), saved: false, source: 'rules',
       title: null, ...input, days, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     };
     return saveTripRecord(trip);
@@ -125,7 +87,6 @@ export const mockApi = {
   },
   async deleteTrip(id) {
     await wait(250);
-    const user = currentUser();
-    write(KEY_TRIPS, read(KEY_TRIPS, []).filter((t) => !(t.id === id && t.userId === user.id)));
+    write(KEY_TRIPS, read(KEY_TRIPS, []).filter((t) => t.id !== id));
   },
 };

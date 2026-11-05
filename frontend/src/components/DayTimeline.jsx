@@ -1,6 +1,6 @@
-import { ArrowUp, ArrowDown, Trash2, ExternalLink, Clock, RefreshCw, Plus } from 'lucide-react';
+import { ArrowUp, ArrowDown, Trash2, ExternalLink, Clock, RefreshCw, Plus, Navigation } from 'lucide-react';
 import { useLang } from '../i18n/LanguageContext.jsx';
-import { mapsLink } from '../lib/geo.js';
+import { mapsLink, mapsDirectionsLink } from '../lib/geo.js';
 import { StopMarker } from './Kawung.jsx';
 
 function reasonText(t, r) {
@@ -39,7 +39,7 @@ function Stop({ item, place, index, isFirst, isLast, color, active, dayIndex, to
           </span>
         </div>
 
-        <p className="mt-3 max-w-prose text-[15px] leading-relaxed">{place.desc[lang]}</p>
+        <p className="mt-3 max-w-prose text-[15px] leading-relaxed">{place.desc?.[lang] || place.desc?.id}</p>
 
         <p className="mt-3 flex items-center gap-1.5 text-sm text-abu">
           <Clock size={15} /> {place.hours ? `${t.trip.hours}: ${place.hours}` : t.trip.hoursUnknown}
@@ -73,8 +73,8 @@ function Stop({ item, place, index, isFirst, isLast, color, active, dayIndex, to
   );
 }
 
-export default function DayTimeline({ day, dayIndex, totalDays, placesById, color, activeId, busy, actions }) {
-  const { t } = useLang();
+export default function DayTimeline({ day, dayIndex, totalDays, placesById, color, activeId, busy, actions, start }) {
+  const { t, lang } = useLang();
   return (
     <section aria-labelledby={`day-${dayIndex}`} className="mb-10">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -83,6 +83,7 @@ export default function DayTimeline({ day, dayIndex, totalDays, placesById, colo
           {t.trip.dayLabel(day.dayNumber)}
         </h3>
         <div className="flex gap-2">
+          {day.items.length > 0 && <a className="btn-ghost py-2" href={mapsDirectionsLink(start, day.items.map((item) => placesById[item.destinationId]).filter(Boolean))} target="_blank" rel="noopener noreferrer"><Navigation size={15} />{lang === 'id' ? 'Rute & waktu' : 'Route & time'}</a>}
           <button className="btn-ghost py-2" onClick={() => actions.openAdd(dayIndex)}><Plus size={16} />{t.trip.addPlace}</button>
           <button className="btn-ghost py-2" onClick={() => actions.regenerateDay(dayIndex)} disabled={busy}>
             <RefreshCw size={16} className={busy ? 'animate-spin' : ''} />{t.trip.regenerateDay}
