@@ -8,8 +8,7 @@ import Spinner from './Spinner.jsx';
 
 /**
  * value: { type: 'current'|'search'|'pin', label, lat, lng } | null
- * Pencarian alamat di mode demo memakai START_SUGGESTIONS.
- * TODO (tim): ganti dengan Google Places Autocomplete atau endpoint backend /api/geocode.
+ * Pencarian awal memakai saran lokasi yang tersedia di aplikasi; pin peta memakai OpenFreeMap.
  */
 export default function StartLocationPicker({ value, onChange }) {
   const { t } = useLang();

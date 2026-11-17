@@ -1,5 +1,5 @@
 /** Motif kawung (empat kelopak) dipakai sebagai penanda halte dan pola latar. */
-export function KawungMark({ color = '#0194F3', size = 28, children, className = '' }) {
+export function KawungMark({ color = 'var(--color-primary)', size = 28, children, className = '' }) {
   return (
     <span className={`relative inline-grid shrink-0 place-items-center ${className}`} style={{ width: size, height: size }} aria-hidden={!children}>
       <svg viewBox="0 0 32 32" width={size} height={size} className="absolute inset-0">
@@ -16,7 +16,7 @@ export function KawungMark({ color = '#0194F3', size = 28, children, className =
   );
 }
 
-export function KawungPattern({ id = 'kawung', color = '#0194F3', opacity = 0.18, className = '' }) {
+export function KawungPattern({ id = 'kawung', color = 'var(--color-primary)', opacity = 0.18, className = '' }) {
   return (
     <svg className={`pointer-events-none absolute inset-0 h-full w-full ${className}`} aria-hidden="true">
       <defs>
@@ -40,7 +40,7 @@ export function KawungPattern({ id = 'kawung', color = '#0194F3', opacity = 0.18
 }
 
 /** Penanda halte bernomor: lingkaran polos dengan cincin putih, gaya situs travel. */
-export function StopMarker({ color = '#0194F3', size = 30, children, className = '' }) {
+export function StopMarker({ color = 'var(--color-primary)', size = 30, children, className = '' }) {
   return (
     <span className={`grid shrink-0 place-items-center rounded-full font-bold text-white ring-4 ring-white shadow-card ${className}`}
       style={{ width: size, height: size, background: color, fontSize: size * 0.42 }}>

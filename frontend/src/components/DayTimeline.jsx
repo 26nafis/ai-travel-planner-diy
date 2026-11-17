@@ -11,19 +11,19 @@ function reasonText(t, r) {
 function Stop({ item, place, index, isFirst, isLast, color, active, dayIndex, totalDays, actions }) {
   const { t, lang } = useLang();
   const reasons = (item.reasons || []).map((r) => reasonText(t, r)).filter(Boolean);
-  const iconBtn = 'grid h-9 w-9 place-items-center rounded-full text-abu hover:bg-primary-50 hover:text-primary disabled:opacity-30 disabled:hover:bg-transparent';
+  const iconBtn = 'grid min-h-11 min-w-11 place-items-center rounded-full text-abu hover:bg-primary-50 hover:text-primary disabled:opacity-30 disabled:hover:bg-transparent sm:h-9 sm:w-9';
 
   return (
-    <li className="stop-in grid grid-cols-[2.25rem_1fr] gap-x-3" style={{ animationDelay: `${index * 60}ms` }}>
+    <li className="stop-in grid min-w-0 grid-cols-[2.75rem_minmax(0,1fr)] gap-x-3" style={{ animationDelay: `${index * 60}ms` }}>
       {/* kolom penanda + garis */}
       <div className="relative flex items-start justify-center">
         {!isLast && <span className="absolute bottom-0 top-10 w-0.5" style={{ background: color, opacity: 0.35 }} aria-hidden="true" />}
-        <button type="button" onClick={() => actions.select(place.id)} className="relative mt-1 rounded-full" aria-label={place.name}>
+        <button type="button" onClick={() => actions.select(place.id)} className="relative mt-1 grid h-11 w-11 shrink-0 place-items-center rounded-full" aria-label={place.name}>
           <StopMarker color={color} size={active ? 34 : 30}>{index + 1}</StopMarker>
         </button>
       </div>
 
-      <article className={`mb-4 rounded-xl border bg-white p-4 shadow-card transition-colors sm:p-5 ${active ? 'border-primary ring-1 ring-primary' : 'border-transparent'}`}>
+      <article className={`mb-4 min-w-0 rounded-xl border bg-white p-4 shadow-card transition-colors sm:p-5 ${active ? 'border-primary ring-1 ring-primary' : 'border-transparent'}`}>
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
             <h4 className="text-base font-bold leading-snug sm:text-lg">
@@ -57,7 +57,7 @@ function Stop({ item, place, index, isFirst, isLast, color, active, dayIndex, to
           {totalDays > 1 && (
             <label className="ml-1 flex items-center gap-1.5 text-sm text-abu">
               <span className="sr-only sm:not-sr-only">{t.trip.moveToDay}</span>
-              <select className="rounded-lg border border-garis bg-white px-3 py-1.5 text-sm text-tinta" value={dayIndex}
+              <select className="min-h-11 rounded-lg border border-garis bg-white px-3 py-1.5 text-sm text-tinta" value={dayIndex}
                 onChange={(e) => actions.moveToDay(index, Number(e.target.value))} aria-label={t.trip.moveToDay}>
                 {Array.from({ length: totalDays }, (_, i) => <option key={i} value={i}>{t.trip.dayLabel(i + 1)}</option>)}
               </select>
@@ -82,11 +82,11 @@ export default function DayTimeline({ day, dayIndex, totalDays, placesById, colo
           <span className="h-3 w-8 rounded-full" style={{ background: color }} aria-hidden="true" />
           {t.trip.dayLabel(day.dayNumber)}
         </h3>
-        <div className="flex gap-2">
-          {day.items.length > 0 && <a className="btn-ghost py-2" href={mapsDirectionsLink(start, day.items.map((item) => placesById[item.destinationId]).filter(Boolean))} target="_blank" rel="noopener noreferrer"><Navigation size={15} />{lang === 'id' ? 'Rute & waktu' : 'Route & time'}</a>}
-          <button className="btn-ghost py-2" onClick={() => actions.openAdd(dayIndex)}><Plus size={16} />{t.trip.addPlace}</button>
-          <button className="btn-ghost py-2" onClick={() => actions.regenerateDay(dayIndex)} disabled={busy}>
-            <RefreshCw size={16} className={busy ? 'animate-spin' : ''} />{t.trip.regenerateDay}
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          {day.items.length > 0 && <a className="btn-ghost min-h-11 py-2" href={mapsDirectionsLink(start, day.items.map((item) => placesById[item.destinationId]).filter(Boolean))} target="_blank" rel="noopener noreferrer"><Navigation size={15} />{lang === 'id' ? 'Rute & waktu' : 'Route & time'}</a>}
+          <button className="btn-ghost min-h-11 py-2" onClick={() => actions.openAdd(dayIndex)}><Plus size={16} />{t.trip.addPlace}</button>
+          <button className="btn-ghost min-h-11 py-2" onClick={() => actions.regenerateDay(dayIndex)} disabled={busy} aria-busy={busy}>
+            <RefreshCw size={16} className={busy ? 'animate-spin' : ''} />{busy ? t.trip.regenerating : t.trip.regenerateDay}
           </button>
         </div>
       </div>

@@ -37,13 +37,18 @@ function Bubble({ message, onPlan }) {
 export default function ChatAssistant() {
   const { t, lang } = useLang();
   const nav = useNavigate();
-  const onPlan = useLocation().pathname === '/rencanakan';
+  const location = useLocation();
+  const onPlan = location.pathname === '/rencanakan';
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const listRef = useRef(null);
   const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (onPlan) setOpen(false);
+  }, [onPlan]);
 
   useEffect(() => {
     if (!open) return;
@@ -108,7 +113,7 @@ export default function ChatAssistant() {
           id="chat-assistant-panel"
           role="dialog"
           aria-label={t.chat.title}
-          className={`fixed right-4 z-40 flex h-[min(70vh,30rem)] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-garis bg-white shadow-float sm:right-6 ${panelPos}`}>
+          className={`fixed left-4 right-4 z-40 flex h-[min(70dvh,30rem)] w-auto max-w-sm flex-col overflow-hidden rounded-2xl border border-garis bg-white shadow-float sm:left-auto sm:right-6 ${panelPos}`}>
           <div className="flex items-start justify-between gap-3 bg-primary px-4 py-3.5 text-white">
             <div className="flex items-center gap-2.5">
               <span className="grid h-9 w-9 place-items-center rounded-full bg-white/15"><Sparkles size={18} /></span>
@@ -118,7 +123,7 @@ export default function ChatAssistant() {
               </div>
             </div>
             <button type="button" onClick={() => setOpen(false)} aria-label={t.chat.close}
-              className="rounded-full p-1.5 transition-colors hover:bg-white/15">
+              className="grid min-h-11 min-w-11 place-items-center rounded-full transition-colors hover:bg-white/15">
               <X size={18} />
             </button>
           </div>
@@ -130,7 +135,7 @@ export default function ChatAssistant() {
                 <div className="flex flex-wrap gap-2 pt-1">
                   {t.chat.suggestions.map((s) => (
                     <button key={s} type="button" onClick={() => send(s)}
-                      className="rounded-full border border-garis bg-white px-3 py-1.5 text-xs font-semibold text-abu transition-colors hover:border-primary hover:text-primary">
+                      className="min-h-11 rounded-full border border-garis bg-white px-3 py-2 text-xs font-semibold text-abu transition-colors hover:border-primary hover:text-primary">
                       {s}
                     </button>
                   ))}
@@ -142,12 +147,10 @@ export default function ChatAssistant() {
 
             {busy && (
               <div className="flex justify-start">
-                <div role="status" aria-label={t.chat.sending}
-                  className="flex items-center gap-1 rounded-2xl rounded-bl-md bg-white px-3.5 py-3 shadow-card">
-                  {[0, 150, 300].map((delay) => (
-                    <span key={delay} className="h-1.5 w-1.5 animate-bounce rounded-full bg-abu/60"
-                      style={{ animationDelay: `${delay}ms` }} />
-                  ))}
+                <div role="status" aria-live="polite"
+                  className="flex items-center gap-2 rounded-2xl rounded-bl-md bg-white px-3.5 py-3 shadow-card">
+                  <span aria-hidden="true" className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary/25 border-t-primary" />
+                  <span className="text-xs font-medium text-abu">{t.chat.sending}</span>
                 </div>
               </div>
             )}
@@ -167,7 +170,7 @@ export default function ChatAssistant() {
                 className="field max-h-24 min-h-[2.75rem] flex-1 resize-none py-2.5 text-sm"
               />
               <button type="submit" disabled={!input.trim() || busy}
-                className="btn-primary shrink-0 px-4 py-2.5" aria-label={t.chat.send}>
+                className="btn-primary min-h-11 shrink-0 px-4 py-2.5" aria-label={t.chat.send} aria-busy={busy}>
                 <Send size={17} />
                 <span>{t.chat.send}</span>
               </button>
@@ -177,18 +180,20 @@ export default function ChatAssistant() {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-controls="chat-assistant-panel"
-        aria-label={open ? t.chat.close : t.chat.open}
-        className={`fixed right-4 z-40 inline-flex items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white shadow-float transition-colors sm:right-6 ${fabPos} ${
-          open ? 'bg-tinta hover:bg-tinta/90' : 'bg-primary hover:bg-primary-700'
-        }`}>
-        {open ? <X size={20} /> : <Sparkles size={20} />}
-        <span>{open ? t.chat.close : t.chat.open}</span>
-      </button>
+      {!onPlan && (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-controls="chat-assistant-panel"
+          aria-label={open ? t.chat.close : t.chat.open}
+          className={`fixed right-4 z-40 grid h-11 w-11 place-items-center rounded-full px-0 py-0 text-sm font-bold text-white shadow-float transition-colors sm:right-6 sm:inline-flex sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3.5 ${fabPos} ${
+            open ? 'bg-tinta hover:bg-tinta/90' : 'bg-primary hover:bg-primary-700'
+          }`}>
+          {open ? <X size={20} /> : <Sparkles size={20} />}
+          <span className="sr-only sm:not-sr-only">{open ? t.chat.close : t.chat.open}</span>
+        </button>
+      )}
     </>
   );
 }

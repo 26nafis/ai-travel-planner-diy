@@ -7,6 +7,7 @@ import { mockApi } from './mockApi.js';
 
 const BASE = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
 export const IS_DEMO = !BASE;
+const CHAT_ENDPOINT = import.meta.env.VITE_CHAT_API_URL?.trim() || (IS_DEMO && import.meta.env.PROD ? '/api/chat' : '');
 
 let token = null;
 export const setToken = (t) => { token = t; try { t ? sessionStorage.setItem('lampah:token', t) : sessionStorage.removeItem('lampah:token'); } catch { /* */ } };
@@ -27,6 +28,21 @@ async function http(method, path, body) {
   return data;
 }
 
+async function chatHttp(body) {
+  const res = await fetch(CHAT_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const e = new Error(data?.message || `Permintaan gagal (${res.status}).`);
+    e.code = data?.code || `HTTP_${res.status}`;
+    throw e;
+  }
+  return data;
+}
+
 const realApi = {
   register: (b) => http('POST', '/api/auth/register', b),
   login: (b) => http('POST', '/api/auth/login', b),
@@ -34,7 +50,7 @@ const realApi = {
   logout: () => http('POST', '/api/auth/logout').catch(() => null),
   updateProfile: (b) => http('PATCH', '/api/profile', b),
   listDestinations: () => http('GET', '/api/destinations'),
-  chat: (b) => http('POST', '/api/chat', b),
+  chat: (b) => (CHAT_ENDPOINT ? chatHttp(b) : http('POST', '/api/chat', b)),
   generateTrip: (b) => http('POST', '/api/trips/generate', b),
   regenerate: (id, b) => http('POST', `/api/trips/${id}/regenerate`, b || {}),
   saveTrip: (id, b) => http('POST', `/api/trips/${id}/save`, b || {}),
@@ -44,4 +60,5 @@ const realApi = {
   deleteTrip: (id) => http('DELETE', `/api/trips/${id}`),
 };
 
-export const api = IS_DEMO ? mockApi : realApi;
+const demoApi = CHAT_ENDPOINT ? { ...mockApi, chat: chatHttp } : mockApi;
+export const api = IS_DEMO ? demoApi : realApi;

@@ -4,21 +4,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Palet ala situs travel (Traveloka dkk.): biru cerah untuk brand, oranye untuk aksi utama
-        primary: { DEFAULT: '#0194F3', 50: '#E6F4FE', 100: '#CCE9FD', 600: '#0182D6', 700: '#0264C8', 800: '#0A4E9B', 900: '#073B78' },
-        accent: { DEFAULT: '#FF5E1F', 50: '#FFF1EA', 100: '#FFDDCC', 500: '#FF7A45', 600: '#FF5E1F', 700: '#D9480F' },
-        success: { DEFAULT: '#0B9E6B', 50: '#E7F7F0', 600: '#0B9E6B', 700: '#087A53' },
-        surface: '#F5F7FA',
-        tinta: '#03121A',
-        abu: '#687176',
-        garis: '#E3E7EB',
+        primary: { DEFAULT: 'var(--color-primary)', 50: 'var(--color-primary-50)', 100: 'var(--color-primary-100)', 600: 'var(--color-primary-600)', 700: 'var(--color-primary-700)', 800: 'var(--color-primary-800)', 900: 'var(--color-primary-900)' },
+        accent: { DEFAULT: 'var(--color-accent)', 50: 'var(--color-accent-50)', 100: 'var(--color-accent-100)', 500: 'var(--color-accent-500)', 600: 'var(--color-accent-600)', 700: 'var(--color-accent-700)' },
+        success: { DEFAULT: 'var(--color-success)', 50: 'var(--color-success-50)', 600: 'var(--color-success-600)', 700: 'var(--color-success-700)' },
+        surface: 'var(--color-surface)',
+        paper: 'var(--color-paper)',
+        tinta: 'var(--color-ink)',
+        abu: 'var(--color-muted)',
+        garis: 'var(--color-rule)',
       },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['var(--font-body)', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        card: '0 2px 8px rgba(3, 18, 26, 0.08)',
-        float: '0 8px 24px rgba(3, 18, 26, 0.14)',
+        card: 'var(--shadow-card)',
+        float: 'var(--shadow-float)',
       },
       maxWidth: { prose: '68ch' },
     },

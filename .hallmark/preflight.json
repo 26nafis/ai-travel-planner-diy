@@ -1,0 +1,16 @@
+{
+  "date": "2026-11-12",
+  "project": "Lampah Jogja",
+  "framework": "React 18 + Vite + Tailwind CSS 3",
+  "designSystem": "design.md at repository root",
+  "font": "Plus Jakarta Sans from frontend/src/tokens.css",
+  "palette": "Existing blue, rust, warm off-white, ink, and muted-rule tokens in frontend/src/tokens.css",
+  "spacing": "Tailwind default spacing with the 4-point rhythm specified in design.md",
+  "motion": "CSS-only; no animation library found in frontend/package.json",
+  "reducedMotion": "Already present in frontend/src/index.css",
+  "preserve": [
+    "Existing layout, routes, copy intent, colors, typography, and component ownership",
+    "Existing reduced-motion rule and root overflow-x clipping"
+  ],
+  "scope": "Mobile usability and truthful loading feedback; no visual redesign"
+}

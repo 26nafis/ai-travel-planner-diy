@@ -1,144 +1,146 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { APIProvider, Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
-import { DIY_BOUNDS } from '../data/destinations.js';
+import { useEffect, useRef, useState } from 'react';
+import mapWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { useLang } from '../i18n/LanguageContext.jsx';
 
+const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
+const EMPTY_ROUTE = { type: 'FeatureCollection', features: [] };
 
-const GMAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-const MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID';
-
-/**
- * points: [{ id, lat, lng, number, color, title, day }]
- * start:  { lat, lng, label } | null
- * onPick: (latLng) => void   — aktifkan mode pilih titik
- */
-export default function TripMap(props) {
-  return GMAPS_KEY ? <GoogleTripMap {...props} /> : <SchematicMap {...props} />;
-}
-
-/* ---------- Google Maps JavaScript API ---------- */
-function FitBounds({ points, start }) {
-  const map = useMap();
-  useEffect(() => {
-    if (!map || !window.google) return;
-    const all = [...points, ...(start ? [start] : [])];
-    if (!all.length) return;
-    const b = new window.google.maps.LatLngBounds();
-    all.forEach((p) => b.extend({ lat: p.lat, lng: p.lng }));
-    if (all.length === 1) { map.setCenter(all[0]); map.setZoom(13); } else map.fitBounds(b, 48);
-  }, [map, points, start]);
-  return null;
-}
-
-function GoogleTripMap({ points = [], start, activeId, onSelect, onPick, className = '' }) {
-  const { t, lang } = useLang();
-  return (
-    <div className={`overflow-hidden rounded-xl border border-garis ${className}`}>
-      <APIProvider apiKey={GMAPS_KEY} language={lang}>
-        <Map mapId={MAP_ID} defaultCenter={{ lat: -7.86, lng: 110.40 }} defaultZoom={10} gestureHandling="cooperative"
-          disableDefaultUI clickableIcons={false} style={{ width: '100%', height: '100%' }}
-          onClick={(e) => onPick && e.detail.latLng && onPick({ lat: e.detail.latLng.lat, lng: e.detail.latLng.lng })}>
-          <FitBounds points={points} start={start} />
-          {start && (
-            <AdvancedMarker position={start} title={t.map.start}>
-              <span className="grid h-5 w-5 place-items-center rounded-full border-[3px] border-white bg-tinta shadow" />
-            </AdvancedMarker>
-          )}
-          {points.map((p) => (
-            <AdvancedMarker key={p.id} position={p} title={p.title} onClick={() => onSelect?.(p.id)} zIndex={p.id === activeId ? 10 : 1}>
-              <span className={`grid place-items-center rounded-full border-2 border-white text-xs font-bold text-white shadow ${p.id === activeId ? 'h-9 w-9' : 'h-7 w-7'}`} style={{ background: p.color }}>
-                {p.number}
-              </span>
-            </AdvancedMarker>
-          ))}
-        </Map>
-      </APIProvider>
-    </div>
-  );
-}
-
-/* ---------- Peta skematis (tanpa kunci API) ---------- */
-// Garis batas DIY yang sangat disederhanakan, hanya untuk orientasi.
-const OUTLINE = [
-  [-7.54, 110.44], [-7.60, 110.50], [-7.74, 110.55], [-7.80, 110.65], [-7.86, 110.76], [-7.95, 110.84],
-  [-8.13, 110.84], [-8.21, 110.74], [-8.20, 110.60], [-8.12, 110.45], [-8.03, 110.33], [-7.97, 110.20],
-  [-7.90, 110.05], [-7.80, 110.01], [-7.66, 110.12], [-7.69, 110.25], [-7.60, 110.35],
-];
-const W = 760, H = 680;
-const project = ({ lat, lng }) => ({
-  x: ((lng - DIY_BOUNDS.west) / (DIY_BOUNDS.east - DIY_BOUNDS.west)) * W,
-  y: ((DIY_BOUNDS.north - lat) / (DIY_BOUNDS.north - DIY_BOUNDS.south)) * H,
-});
-const unproject = ({ x, y }) => ({
-  lng: DIY_BOUNDS.west + (x / W) * (DIY_BOUNDS.east - DIY_BOUNDS.west),
-  lat: DIY_BOUNDS.north - (y / H) * (DIY_BOUNDS.north - DIY_BOUNDS.south),
-});
-
-function SchematicMap({ points = [], start, activeId, onSelect, onPick, className = '' }) {
+/** points: [{ id, lat, lng, number, color, title, day }], start: { lat, lng, label } */
+export default function TripMap({ points = [], start, activeId, onSelect, onPick, routeGeometry, className = '' }) {
   const { t } = useLang();
-  const svgRef = useRef(null);
-  const outline = useMemo(() => OUTLINE.map(([lat, lng]) => { const p = project({ lat, lng }); return `${p.x},${p.y}`; }).join(' '), []);
+  const containerRef = useRef(null);
+  const mapRef = useRef(null);
+  const maplibreRef = useRef(null);
+  const markersRef = useRef([]);
+  const callbacksRef = useRef({});
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  // garis putus-putus per hari, mengikuti urutan kunjungan
-  const dayLines = useMemo(() => {
-    const byDay = {};
-    points.forEach((p) => { (byDay[p.day] ||= []).push(p); });
-    return Object.values(byDay).map((ps) => ({ color: ps[0].color, d: ps.map((p, i) => { const q = project(p); return `${i ? 'L' : 'M'}${q.x},${q.y}`; }).join(' ') }));
-  }, [points]);
+  callbacksRef.current = { onPick, onSelect };
 
-  const handleClick = (e) => {
-    if (!onPick) return;
-    const svg = svgRef.current;
-    const pt = svg.createSVGPoint();
-    pt.x = e.clientX; pt.y = e.clientY;
-    const loc = pt.matrixTransform(svg.getScreenCTM().inverse());
-    onPick(unproject(loc));
-  };
+  useEffect(() => {
+    if (!containerRef.current) return undefined;
+    let alive = true;
+    let map;
+    let timeout;
 
-  // Perbesar ke area titik-titik yang tampil; mode pilih titik tetap memperlihatkan seluruh DIY.
-  const viewBox = useMemo(() => {
-    const all = [...points, ...(start ? [start] : [])].map(project);
-    if (onPick || all.length < 2) return `0 0 ${W} ${H}`;
-    let x0 = Math.min(...all.map((p) => p.x)), x1 = Math.max(...all.map((p) => p.x));
-    let y0 = Math.min(...all.map((p) => p.y)), y1 = Math.max(...all.map((p) => p.y));
-    const minSpan = 220, pad = 70;
-    if (x1 - x0 < minSpan) { const c = (x0 + x1) / 2; x0 = c - minSpan / 2; x1 = c + minSpan / 2; }
-    if (y1 - y0 < minSpan) { const c = (y0 + y1) / 2; y0 = c - minSpan / 2; y1 = c + minSpan / 2; }
-    return `${x0 - pad} ${y0 - pad} ${x1 - x0 + pad * 2} ${y1 - y0 + pad * 2}`;
-  }, [points, start, onPick]);
-  const [, , vbW, vbH] = viewBox.split(' ').map(Number);
-  const scale = (Math.max(vbW, vbH) / W) * 1.5; // ukuran penanda mengikuti zoom
+    import('maplibre-gl').then((maplibre) => {
+      if (!alive) return;
+      const { LngLatBounds, Map: MapLibreMap, Marker, NavigationControl, setWorkerUrl } = maplibre;
+      maplibreRef.current = maplibre;
+      setWorkerUrl(mapWorkerUrl);
+      map = new MapLibreMap({
+        container: containerRef.current,
+        style: MAP_STYLE,
+        center: [110.35, -7.86],
+        zoom: 8.2,
+        minZoom: 6,
+        maxZoom: 18,
+        attributionControl: { compact: true },
+        cooperativeGestures: true,
+        dragRotate: false,
+        pitchWithRotate: false,
+      });
+      mapRef.current = map;
+      map.addControl(new NavigationControl({ showCompass: false, visualizePitch: false }), 'top-right');
 
-  const s = start ? project(start) : null;
+      timeout = window.setTimeout(() => { if (alive && !map.loaded()) setFailed(true); }, 14000);
+      map.once('load', () => {
+        if (!alive) return;
+        window.clearTimeout(timeout);
+        setLoaded(true);
+        if (!map.getSource('route-line')) {
+          map.addSource('route-line', { type: 'geojson', data: EMPTY_ROUTE });
+          const accent = getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim();
+          const paper = getComputedStyle(document.documentElement).getPropertyValue('--color-paper').trim();
+          map.addLayer({
+            id: 'route-line', type: 'line', source: 'route-line',
+            layout: { 'line-cap': 'round', 'line-join': 'round' },
+            paint: { 'line-color': accent, 'line-width': 5, 'line-opacity': 0.88 },
+          });
+          map.addLayer({
+            id: 'route-casing', type: 'line', source: 'route-line',
+            layout: { 'line-cap': 'round', 'line-join': 'round' },
+            paint: { 'line-color': paper, 'line-width': 9, 'line-opacity': 0.9 },
+          }, 'route-line');
+        }
+      });
+      map.on('click', (event) => {
+        const pick = callbacksRef.current.onPick;
+        if (pick) pick({ lat: event.lngLat.lat, lng: event.lngLat.lng });
+      });
+    }).catch(() => { if (alive) setFailed(true); });
+
+    return () => {
+      alive = false;
+      window.clearTimeout(timeout);
+      markersRef.current.forEach((marker) => marker.remove());
+      markersRef.current = [];
+      map?.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const maplibre = maplibreRef.current;
+    if (!map || !loaded || !maplibre) return;
+    const { LngLatBounds, Marker } = maplibre;
+    markersRef.current.forEach((marker) => marker.remove());
+    markersRef.current = [];
+
+    if (start && Number.isFinite(start.lat) && Number.isFinite(start.lng)) {
+      const startEl = document.createElement('span');
+      startEl.className = 'map-start-marker';
+      startEl.setAttribute('aria-label', start.label || t.map.start);
+      startEl.title = start.label || t.map.start;
+      markersRef.current.push(new Marker({ element: startEl, anchor: 'center' }).setLngLat([start.lng, start.lat]).addTo(map));
+    }
+
+    points.forEach((point) => {
+      if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng)) return;
+      const element = document.createElement('button');
+      element.type = 'button';
+      element.className = `map-stop-marker${point.id === activeId ? ' is-active' : ''}`;
+      element.style.setProperty('--marker-color', point.color || '#176b91');
+      element.textContent = String(point.number ?? '•');
+      element.setAttribute('aria-label', point.title || t.trip.mapTitle);
+      element.title = point.title || '';
+      element.addEventListener('click', (event) => {
+        event.stopPropagation();
+        callbacksRef.current.onSelect?.(point.id);
+      });
+      markersRef.current.push(new Marker({ element, anchor: 'center' }).setLngLat([point.lng, point.lat]).addTo(map));
+    });
+
+    const bounds = new LngLatBounds();
+    let count = 0;
+    [...points, ...(start ? [start] : [])].forEach((point) => {
+      if (Number.isFinite(point.lat) && Number.isFinite(point.lng)) {
+        bounds.extend([point.lng, point.lat]);
+        count += 1;
+      }
+    });
+    if (count > 1) map.fitBounds(bounds, { padding: 54, maxZoom: 13, duration: 450 });
+    else if (count === 1) map.flyTo({ center: bounds.getCenter(), zoom: 13, duration: 450 });
+  }, [points, start, activeId, loaded, t]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource('route-line');
+    if (source) {
+      source.setData(routeGeometry
+        ? { type: 'Feature', properties: {}, geometry: routeGeometry }
+        : EMPTY_ROUTE);
+    }
+  }, [routeGeometry, loaded]);
+
   return (
-    <figure className={`relative overflow-hidden rounded-xl border border-garis bg-[#D6ECFB] ${className}`}>
-      <svg ref={svgRef} viewBox={viewBox} className={`h-full w-full ${onPick ? 'cursor-crosshair' : ''}`}
-        preserveAspectRatio="xMidYMid meet" onClick={handleClick} role="img" aria-label={t.trip.mapTitle}>
-        <polygon points={outline} fill="#FFFFFF" stroke="#B9D9F0" strokeWidth={2 * scale} strokeLinejoin="round" />
-        <text x={W / 2} y={H - 18} textAnchor="middle" fill="#8A97A3" fontSize="15" fontStyle="italic">Samudra Hindia</text>
-        <text x={project({ lat: -7.555, lng: 110.445 }).x + 14} y={project({ lat: -7.555, lng: 110.445 }).y + 4} fill="#8A97A3" fontSize={14 * scale}>Merapi</text>
-        {dayLines.map((l, i) => <path key={i} d={l.d} fill="none" stroke={l.color} strokeWidth={2 * scale} strokeDasharray={`${5 * scale} ${6 * scale}`} opacity="0.55" />)}
-        {s && (
-          <g>
-            <circle cx={s.x} cy={s.y} r={11 * scale} fill="#03121A" stroke="#fff" strokeWidth={4 * scale} />
-            <text x={s.x + 16 * scale} y={s.y + 5 * scale} fontSize={14 * scale} fontWeight="700" fill="#03121A" paintOrder="stroke" stroke="#F7F8F4" strokeWidth={4 * scale}>{start.label || t.map.start}</text>
-          </g>
-        )}
-        {points.map((p) => {
-          const q = project(p);
-          const active = p.id === activeId;
-          return (
-            <g key={p.id} transform={`translate(${q.x},${q.y}) scale(${scale})`} className="cursor-pointer"
-              onClick={(e) => { e.stopPropagation(); onSelect?.(p.id); }} tabIndex={onSelect ? 0 : -1}
-              onKeyDown={(e) => e.key === 'Enter' && onSelect?.(p.id)} aria-label={`${p.number}. ${p.title}`}>
-              <circle r={active ? 17 : 13} fill={p.color} stroke="#fff" strokeWidth="3" />
-              <text y="4.5" textAnchor="middle" fontSize={active ? 14 : 12} fontWeight="700" fill="#fff">{p.number}</text>
-              {active && <text x="22" y="5" fontSize="15" fontWeight="700" fill="#1A1D26" paintOrder="stroke" stroke="#F7F8F4" strokeWidth="4">{p.title}</text>}
-            </g>
-          );
-        })}
-      </svg>
-      <figcaption className="absolute bottom-2 left-3 right-3 text-[11px] text-abu">{t.map.schematic}</figcaption>
-    </figure>
+    <div aria-busy={!loaded && !failed} className={`relative isolate overflow-hidden rounded-[var(--radius-card)] border border-garis bg-primary-50 ${onPick ? 'cursor-crosshair' : ''} ${className}`}>
+      <div ref={containerRef} className="absolute inset-0" aria-label={t.trip.mapTitle} />
+      {!loaded && !failed && <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-2 text-xs font-semibold text-tinta shadow-card" role="status"><span aria-hidden="true" className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary/25 border-t-primary" />{t.map.loading}</div>}
+      {failed && <div className="absolute inset-x-3 bottom-3 rounded-lg bg-white/95 px-3 py-2 text-xs text-tinta shadow-card" role="status">{t.map.unavailable}</div>}
+      {onPick && <div className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-white/95 px-3 py-2 text-xs font-medium text-tinta shadow-card">{t.plan.pinHint}</div>}
+    </div>
   );
 }
