@@ -25,7 +25,7 @@ export default function AddPlacePanel({ open, dayNumber, destinations, usedIds, 
       <div className="flex h-full flex-col" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div className="flex items-center justify-between border-b border-garis px-5 py-4">
           <h2 id="add-title" className="text-lg font-extrabold">{t.trip.addTo(dayNumber)}</h2>
-          <button className="rounded-full p-2 hover:bg-white" onClick={onClose} aria-label={t.trip.cancel}><X /></button>
+          <button className="grid min-h-11 min-w-11 place-items-center rounded-full hover:bg-white" onClick={onClose} aria-label={t.trip.cancel}><X /></button>
         </div>
         <div className="space-y-3 border-b border-garis px-5 py-4">
           <input className="field" placeholder={t.trip.searchPlaces} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t.trip.searchPlaces} />
@@ -46,7 +46,7 @@ export default function AddPlacePanel({ open, dayNumber, destinations, usedIds, 
                 <p className="text-sm text-abu">{d.regency}</p>
                 <p className="mt-1 text-sm">{d.desc?.[lang] || d.desc?.id}</p>
               </div>
-              <button className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-white hover:bg-primary-600"
+              <button className="grid min-h-11 min-w-11 shrink-0 place-items-center rounded-full bg-primary text-white hover:bg-primary-600"
                 onClick={() => onAdd(d.id)} aria-label={`${t.trip.addPlace}: ${d.name}`}><Plus size={18} /></button>
             </li>
           ))}

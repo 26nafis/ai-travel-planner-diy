@@ -1,0 +1,10 @@
+[
+  {
+    "date": "2026-11-10",
+    "scope": "app",
+    "macrostructure": "Field Guide / Planning Workspace",
+    "theme": "Lampah Jogja warm-paper blue-and-rust system",
+    "enrichment": "OpenFreeMap working map preview",
+    "brief": "Polish Lampah Jogja trip planning UI and integrate OpenFreeMap with cached OSRM driving routes."
+  }
+]

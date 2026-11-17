@@ -30,5 +30,5 @@ export function isInsideDIY({ lat, lng }, b) {
   return lat <= b.north && lat >= b.south && lng >= b.west && lng <= b.east;
 }
 
-export const DAY_COLORS = ['#0194F3', '#FF5E1F', '#0B9E6B', '#7B61FF', '#00A3A3', '#E5487A', '#4B5563'];
+export const DAY_COLORS = ['var(--color-primary)', 'var(--color-accent)', 'var(--color-day-3)', 'var(--color-day-4)', 'var(--color-day-5)', 'var(--color-day-6)', 'var(--color-day-7)'];
 export const dayColor = (i) => DAY_COLORS[i % DAY_COLORS.length];
